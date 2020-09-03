@@ -1,8 +1,8 @@
 package lib.ui;
 
-import io.appium.java_client.AppiumDriver;
 import lib.Platform;
 import org.openqa.selenium.WebElement;
+import org.openqa.selenium.remote.RemoteWebDriver;
 
 abstract public class ArticlePageObject extends MainPageObject {
     protected static String
@@ -10,6 +10,7 @@ abstract public class ArticlePageObject extends MainPageObject {
             FOOTER_ELEMENT,
             OPTIONS_BUTTON,
             OPTIONS_ADD_TO_MY_LIST_BUTTON,
+            OPTIONS_REMOVE_FROM_MY_LIST_BUTTON,
             ADD_TO_MY_LIST_OVERLAY,
             MY_LIST_NAME_INPUT,
             MY_LIST_OK_BUTTON,
@@ -18,7 +19,7 @@ abstract public class ArticlePageObject extends MainPageObject {
             ARTICLE_TO_DELETE,
             ARTICLE_TO_STAY;
 
-    public ArticlePageObject(AppiumDriver driver) {
+    public ArticlePageObject(RemoteWebDriver driver) {
         super(driver);
     }
 
@@ -48,20 +49,30 @@ abstract public class ArticlePageObject extends MainPageObject {
         WebElement title_element = waitForTitleElement();
         if (Platform.getInstance().isAndroid()) {
             return title_element.getAttribute("text");
-        } else {
+        } else if (Platform.getInstance().isIOS()) {
             return title_element.getAttribute("name");
+        } else {
+            return title_element.getText();
         }
     }
 
     public void swipeToFooter() {
         if (Platform.getInstance().isAndroid()) {
-            this.swipeUpToFindElement(FOOTER_ELEMENT,
-                    "Cannot find the end of article",
-                    40);
-        } else {
+            this.swipeUpToFindElement(
+                    FOOTER_ELEMENT,
+                    "Cannot find the end of article ",
+                    40
+            );
+        } else if (Platform.getInstance().isIOS()) {
             this.swipeUpTillElementAppear(FOOTER_ELEMENT,
                     "Cannot find the end of article",
                     40);
+        } else {
+            this.scrollWebPageTillElementNotVisible(
+                    FOOTER_ELEMENT,
+                    "Cannot find the end of article",
+                    40
+            );
         }
     }
 
@@ -98,17 +109,13 @@ abstract public class ArticlePageObject extends MainPageObject {
                 5);
     }
 
-    public void addArticleToMySaved() {
-        this.waitForElementAndClick(OPTIONS_ADD_TO_MY_LIST_BUTTON,
-                "Cannot find option to add article to reading list",
-                5);
-    }
-
     public void closeArticle() {
-        this.waitForElementAndClick(
-                (CLOSE_ARTICLE_BUTTON),
-                "Cannot close article, cannot find X link",
-                5);
+        if (Platform.getInstance().isIOS() || Platform.getInstance().isAndroid()) {
+            this.waitForElementAndClick(CLOSE_ARTICLE_BUTTON,
+                    "Cannot find close article button", 5);
+        } else {
+            System.out.println("Method closeArticle() does nothing for platform " + Platform.getInstance().getPlatformVar());
+        }
     }
 
     public void assertArticleTitlePresent() {
@@ -132,7 +139,8 @@ abstract public class ArticlePageObject extends MainPageObject {
                 5
         );
     }
-    public void swipeToDeleteOneArticle(){
+
+    public void swipeToDeleteOneArticle() {
         this.swipeElementToLeft(ARTICLE_TO_DELETE,
                 "Cannot find 'Object-oriented programming language' article topic");
 
@@ -141,7 +149,7 @@ abstract public class ArticlePageObject extends MainPageObject {
         }
     }
 
-    public void checkOneArticleWasDeleted(){
+    public void checkOneArticleWasDeleted() {
         this.waitForElementNotPresent(ARTICLE_TO_DELETE,
                 "Cannot delete saved article",
                 25);
@@ -153,6 +161,30 @@ abstract public class ArticlePageObject extends MainPageObject {
         this.waitForElementAndClick(ARTICLE_TO_STAY,
                 "Cannot click 'High-level programming language' topic in my folder",
                 5);
+    }
+
+    public void addArticleToMySaved() {
+        if (Platform.getInstance().isMw()) {
+            this.removeArticleFromSavedIfItAdded();
+        }
+        this.waitForElementAndClick(OPTIONS_ADD_TO_MY_LIST_BUTTON,
+                "Cannot finde options button 'Add to my list'",
+                5);
+    }
+
+    public void removeArticleFromSavedIfItAdded() {
+        if (this.isElementPresent(OPTIONS_REMOVE_FROM_MY_LIST_BUTTON)) {
+            this.waitForElementAndClick(
+                    OPTIONS_REMOVE_FROM_MY_LIST_BUTTON,
+                    "Cannot click button to remove an article from saved",
+                    1
+            );
+            this.waitForElementPresent(
+                    OPTIONS_ADD_TO_MY_LIST_BUTTON,
+                    "Cannot find button to add article in  my list",
+                    5
+            );
+        }
     }
 }
 

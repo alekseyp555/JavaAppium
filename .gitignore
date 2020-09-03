@@ -1,0 +1,5 @@
+.idea
+ci-scripts/
+target/
+*.log
+*.txt
